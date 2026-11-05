@@ -3,10 +3,10 @@
 Run ``chat`` (after ``pip install .``) or ``python chat.py`` to start it.
 """
 import os
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 from groq import Groq
 
-load_dotenv(find_dotenv(usecwd=True))
+load_dotenv()
 client = Groq(api_key=os.environ.get('GROQ_API_KEY'))
 
 
