@@ -1,34 +1,62 @@
 # docchat
 
-A command-line pirate chatbot that keeps the full conversation history, so follow-up questions use earlier context. It calls a Groq-hosted model.
+docchat is a command-line chatbot that answers questions about the files in the current folder. The model calls `ls`, `cat`, `grep`, and `calculate` tools to inspect the files before answering.
 
-## Install
-
-```
-python -m pip install .
-```
-
-Put your key in a `.env` file in the folder you run from:
+## Webpage
 
 ```
-GROQ_API_KEY=your_key_here
-```
-
-## Use
-
-```
+$ cd test_projects/webpage
 $ chat
-chat> who are you?
-chat> what did I just ask you?
+chat> /ls .
+Kuchipudi.jpg
+README.md
+bharatnatyam.html
+bharatnatyam.jpeg
+index.html
+indian_dances.jpeg
+kuchipudi.html
+style.css
+submission.toml
+chat> What is this webpage about?
+(reply pending: Groq API key not yet configured)
 ```
 
-Exit with Ctrl+C or end-of-input (Ctrl+D on macOS/Linux, Ctrl+Z then Enter on Windows).
+From the webpage project I learned how to build a multi-page site with HTML and style it with CSS.
 
-## Test
+## Markdown compiler
 
 ```
-python -m coverage run --include="./chat.py" -m pytest chat.py --doctest-modules
-python -m coverage report -m chat.py
+$ cd test_projects/markdown_compiler
+$ chat
+chat> /ls .
+README.md
+example
+markdown_compiler
+pyproject.toml
+requirements.txt
+chat> What markdown features does this compiler support?
+(reply pending: Groq API key not yet configured)
 ```
 
-Tests are offline: they patch the API client, so no real key is needed (`GROQ_API_KEY=offline-test` works).
+From the Markdown compiler I learned how to use regular expressions and doctests to turn Markdown into HTML.
+
+## eBay scraper
+
+```
+$ cd test_projects/ebay_scraper
+$ chat
+chat> /ls .
+README.md
+drill press.csv
+drill press.json
+ebay-dl.py
+garden tools.csv
+garden tools.json
+mechanical keyboard.csv
+mechanical keyboard.json
+submission.toml
+chat> What data does this scraper collect from eBay?
+(reply pending: Groq API key not yet configured)
+```
+
+From the eBay scraper I learned how to download web pages and extract structured data from HTML.
