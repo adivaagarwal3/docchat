@@ -331,8 +331,8 @@ def run_command(chat, line):
     >>> chat = Chat(system='S', client=_FakeClient(['Short summary.'], []))
     >>> run_command(chat, '/compact')
     'Short summary.'
-    >>> chat.messages
-    [{'role': 'user', 'content': 'Short summary.'}]
+    >>> len(chat.messages)
+    2
     """
     try:
         parts = shlex.split(line[1:])
