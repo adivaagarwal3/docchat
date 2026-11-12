@@ -116,6 +116,7 @@ def _fake_client(replies, sent):
     replies = list(replies)
 
     def create(messages, **kwargs):
+        """Record the messages sent and return the next scripted reply."""
         sent.append([dict(m) for m in messages])
         reply = replies.pop(0)
         if isinstance(reply, str):
