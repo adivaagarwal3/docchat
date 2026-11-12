@@ -4,7 +4,7 @@
 def compact(chat):
     """
     Summarize chat's conversation in at most five lines and replace
-    chat.messages with that summary (keeping the system message).
+    chat.messages with a single entry holding that summary.
 
     >>> from chat import Chat, _FakeClient
     >>> sent = []
@@ -18,12 +18,8 @@ def compact(chat):
     l3
     l4
     l5
-    >>> chat.messages[0]
-    {'role': 'system', 'content': 'Be brief.'}
-    >>> chat.messages[1]['content'].splitlines()[0]
-    'Summary of the conversation so far:'
-    >>> len(chat.messages)
-    2
+    >>> chat.messages == [{'role': 'user', 'content': summary.rsplit(chr(10), 1)[0]}]
+    True
     >>> sent[0][-1]['role']
     'user'
     """
@@ -37,8 +33,5 @@ def compact(chat):
     text = completion.choices[0].message.content or ''
     lines = [line for line in text.splitlines() if line.strip()][:5]
     summary = '\n'.join(lines)
-    chat.messages = [
-        chat.messages[0],
-        {'role': 'user', 'content': 'Summary of the conversation so far:\n' + summary},
-    ]
+    chat.messages = [{'role': 'user', 'content': summary}]
     return summary
