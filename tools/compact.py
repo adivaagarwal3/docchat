@@ -18,8 +18,8 @@ def compact(chat):
     l3
     l4
     l5
-    >>> chat.messages == [{'role': 'user', 'content': summary.rsplit(chr(10), 1)[0]}]
-    True
+    >>> chat.messages
+    [{'role': 'user', 'content': 'User greeted.\nAssistant replied.\nl3\nl4\nl5'}]
     >>> sent[0][-1]['role']
     'user'
     """
