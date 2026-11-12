@@ -8,6 +8,7 @@ Lines starting with ``/`` run a tool directly, e.g. ``/ls .`` or
 import json
 import os
 import shlex
+import sys
 
 from dotenv import load_dotenv
 
@@ -237,10 +238,11 @@ class Chat:
     >>> tmp.cleanup()
     """
 
-    def __init__(self, system=SYSTEM_PROMPT, client=None):
+    def __init__(self, system=SYSTEM_PROMPT, client=None, debug=False):
         """Start the history with a system message; the client is made later."""
         self.messages = [{'role': 'system', 'content': system}]
         self._client = client
+        self.debug = debug
 
     @property
     def client(self):
@@ -263,6 +265,16 @@ class Chat:
         'Hello!'
         >>> chat.messages[1:]
         [{'role': 'user', 'content': 'Hi'}, {'role': 'assistant', 'content': 'Hello!'}]
+
+        With debug on, each tool call is printed and still runs:
+
+        >>> chat = Chat(client=_FakeClient([('calculate', {'expression': '2+2'}), '4.'], []),
+        ...             debug=True)
+        >>> chat.send_message('2+2?', temperature=0)
+        [debug] calculate {"expression": "2+2"}
+        '4.'
+        >>> chat.messages[-2]['content']
+        '4'
         """
         self.messages.append({'role': 'user', 'content': message})
         while True:
@@ -278,6 +290,8 @@ class Chat:
             if not reply.tool_calls:
                 return reply.content
             for call in reply.tool_calls:
+                if self.debug:
+                    print(f'[debug] {call.function.name} {call.function.arguments}')
                 self.messages.append({
                     'role': 'tool',
                     'tool_call_id': call.id,
@@ -307,6 +321,18 @@ def run_command(chat, line):
     'Error: bad arguments for /cat'
     >>> chat._client is None
     True
+
+    /compact and /load_image act on the chat itself:
+
+    >>> run_command(chat, '/load_image /etc/x.png')
+    'Error: unsafe path'
+    >>> run_command(chat, '/load_image')
+    'Error: bad arguments for /load_image'
+    >>> chat = Chat(system='S', client=_FakeClient(['Short summary.'], []))
+    >>> run_command(chat, '/compact')
+    'Short summary.'
+    >>> len(chat.messages)
+    2
     """
     try:
         parts = shlex.split(line[1:])
@@ -316,6 +342,14 @@ def run_command(chat, line):
         output = 'Error: empty command'
     elif parts is None:
         output = f'Error: bad arguments for /{line[1:].split()[0]}'
+    elif parts[0] in ('compact', 'load_image'):
+        from tools.compact import compact
+        from tools.load_image import load_image
+        command = {'compact': compact, 'load_image': load_image}[parts[0]]
+        try:
+            return command(chat, *parts[1:])
+        except TypeError:
+            return f'Error: bad arguments for /{parts[0]}'
     elif parts[0] not in TOOLS:
         output = f'Error: unknown command /{parts[0]}'
     else:
@@ -327,8 +361,24 @@ def run_command(chat, line):
     return output
 
 
-def repl(temperature=0.8):
+def repl(temperature=0.8, argv=None):
     r"""Read input and reply until Ctrl-C or end of input.
+
+    Command-line options (read from sys.argv only when run as ``chat``):
+    ``chat "message"`` sends one message, prints the reply, and exits;
+    ``chat --debug`` prints each tool name and its arguments.
+
+    >>> sent = []
+    >>> from unittest.mock import patch
+    >>> fake = _FakeClient([('calculate', {'expression': '6*7'}), 'It is 42.'], sent)
+    >>> with patch('groq.Groq', return_value=fake):
+    ...     repl(temperature=0, argv=['--debug', 'What is 6*7?'])
+    [debug] calculate {"expression": "6*7"}
+    It is 42.
+    >>> with patch('sys.argv', ['chat', 'Hi']), \
+    ...      patch('groq.Groq', return_value=_FakeClient(['Hello!'], [])):
+    ...     repl(temperature=0)
+    Hello!
 
     Lines starting with / run a tool directly, with no API request:
 
@@ -361,7 +411,15 @@ def repl(temperature=0.8):
     >>> os.chdir(old)
     >>> tmp.cleanup()
     """
-    chat = Chat()
+    if argv is None:
+        is_cli = os.path.basename(sys.argv[0]) in ('chat', 'chat.py')
+        argv = sys.argv[1:] if is_cli else []
+    debug = '--debug' in argv
+    words = [a for a in argv if a != '--debug']
+    chat = Chat(debug=debug)
+    if words:
+        print(chat.send_message(' '.join(words), temperature=temperature))
+        return
     try:
         while True:
             user_input = input('chat> ')
